@@ -1,135 +1,178 @@
-This project is being built as a Spring Boot application that analyzes a GitHub user’s public activity and generates a developer performance score based on commits, pull requests, issues, and repository activity.
+DevBadge – GitHub Activity Scoring System
 
-Below is a summary of what has been implemented so far.
+DevBadge is a full-stack project that analyzes a GitHub user’s public activity and generates a set of scores based on commits, pull requests, issues, repository structure, and overall contribution patterns.
+The goal is to provide a simple and objective indicator of a developer’s consistency, impact, and code activity.
 
-✅ 1. Project Setup
+This project includes:
 
-Spring Boot 3.5.x backend created and configured.
+A Spring Boot backend that integrates with the GitHub REST API
 
-MySQL database initialized (devbadge).
+A scoring engine that processes GitHub data and produces several metrics
 
-Lombok added to reduce boilerplate code.
+A caching layer to reduce unnecessary GitHub API calls
 
-GitHub personal access token and base API URL configured via application.properties.
+A history system that stores past scores
 
-Custom RestTemplate bean created for authenticated GitHub API communication.
+A React (Vite) frontend for searching users and visualizing results
 
-✅ 2. GitHub API Configuration
+Features
+1. GitHub User Analysis
 
-Implemented a dedicated configuration class:
+The system retrieves public data from GitHub, including:
 
-GitHubApiConfig.java
+Profile information
 
-Key features:
+Public repositories
 
-Injects GitHub API URL and token using @Value.
+Commits (with pagination)
 
-Builds a specialized RestTemplate with:
+Issues
 
-Authorization header (Bearer <token>)
+Pull requests
 
-GitHub API headers
+2. Scoring Categories
 
-Request timeouts
+Each user receives scores in several areas, including:
 
-Root URI for cleaner endpoint calls
+Commit quality
 
-Registered as a named bean (githubRestTemplate) for injection.
+Consistency
 
-This component is responsible for all outbound communication to GitHub.
+Code review and collaboration activity
 
-✅ 3. DTO Layer (Mapping GitHub JSON → Java Objects)
+Overall contribution impact
 
-Created DTOs for all GitHub data the project needs:
+The scoring service aggregates all collected data and produces an overall score.
 
-3.1 User Data
+3. Caching Layer
 
-GitHubUserDTO
+API responses are cached in a database table with expiration times.
+This reduces repeated requests to GitHub and helps avoid rate-limit issues.
 
-Stores profile information (login, id, bio, followers, etc.)
+4. Score History Tracking
 
-3.2 Repository Data
+Each time a score changes, a new history entry is created.
+This allows users to track how their activity evolves over time.
 
-GitHubRepoDTO
+5. Frontend Interface
 
-Maps metadata for each repository (name, stars, forks, timestamps).
+A simple React interface is provided where users can:
 
-3.3 Commit Data
+Enter a GitHub username
 
-GitHubCommitDTO
+View the calculated scores
 
-Includes nested structures for commit details and stats.
+See score history in table format
 
-Used to analyze commit quality, consistency, and impact.
+Technologies Used
+Backend
 
-3.4 Pull Request Data
+Java 17
 
-GitHubPullRequestDTO
+Spring Boot 3
 
-Captures PR metadata such as review comments, commit counts, and merge info.
+Spring Data JPA
 
-3.5 Issue Data
+MySQL
 
-GitHubIssueDTO
+Maven
 
-Maps issue information, including timestamps and comment counts.
+Lombok
 
-Identifies whether an issue is actually a pull request.
+GitHub REST API
 
-All DTOs use:
+Hibernate
 
-Lombok (@Data) for getters/setters
+Frontend
 
-Jackson (@JsonProperty) for mapping GitHub’s snake_case fields
+React
 
-✅ 4. GitHubApiService (Data Retrieval Layer)
+Vite
 
-Central service responsible for making authenticated requests to GitHub.
+JavaScript
 
-Implemented methods:
+Axios
 
-fetchUserProfile(username)
+CSS modules
 
-fetchUserRepositories(username)
+Project Structure
+Backend
+src/main/java/com/devbadge/devbadge/
+│
+├── config/               // CORS and Security configuration
+├── controller/           // REST controllers
+├── dto/                  // GitHub API DTOs and response models
+├── entity/               // JPA entities (User, Score, History, Cache)
+├── repository/           // Spring Data repositories
+├── service/              // Scoring logic, caching, API integration
+└── DevBadgeApplication   // Main application entry point
 
-fetchRepositoryCommits(username, repo, limit)
+Frontend
+devbadge-frontend/
+│
+├── src/
+│   ├── components/       // UI components
+│   ├── pages/            // Main pages
+│   ├── api/              // Axios request helpers
+│   ├── App.jsx
+│   └── main.jsx
+└── package.json
 
-fetchPullRequests(username, repo)
+How to Run the Project
+1. Backend
 
-fetchIssues(username, repo)
+Create a MySQL database:
 
-Each method:
+CREATE DATABASE devbadge;
 
-Uses the configured githubRestTemplate
 
-Handles errors with HttpClientErrorException
+Configure your application.properties:
 
-Logs activity using @Slf4j
+spring.datasource.url=jdbc:mysql://localhost:3306/devbadge?useSSL=false&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=
+github.token=${GITHUB_TOKEN}
 
-Returns clean Java objects or empty lists
 
-Uses ParameterizedTypeReference for mapping JSON arrays
+Set your GitHub token in your environment:
 
-This service is now capable of retrieving all fundamental GitHub data required for scoring.
+export GITHUB_TOKEN=your_token_here
 
-📌 Next Steps
 
-The next phase will introduce:
+Run:
 
-A test controller to validate API integration.
+mvn spring-boot:run
 
-User entity and database persistence.
 
-Scoring logic for commits, PRs, issues, consistency, and impact.
+Backend runs at:
+http://localhost:8080
 
-The main analysis workflow that aggregates all user activity.
+2. Frontend
 
-📌 Current Status
+From inside the devbadge-frontend directory:
 
-The core foundation for GitHub integration is complete:
+npm install
+npm run dev
 
-✔ Configuration
-✔ DTO mapping
-✔ API communication
-✔ Error handling
-✔ Logging
+
+Frontend runs at:
+http://localhost:5173
+
+API Endpoints
+Calculate scores for a user
+GET /api/scores/{username}
+
+Get history for a user
+GET /api/scores/{username}/history
+
+Notes and Future Improvements
+
+Additional commit quality metrics could be added (file changes, message analysis).
+
+More advanced contribution impact scoring can be implemented.
+
+Tests will be added to improve stability.
+
+A deployment configuration (Docker and CI) will be added later.
+
+
