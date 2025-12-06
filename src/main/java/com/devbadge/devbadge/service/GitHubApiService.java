@@ -58,7 +58,7 @@ public class GitHubApiService {
              log.info("Fetching issues for {}/{}", username, repo);
 
              ResponseEntity<List<GitHubIssueDTO>> response = restTemplate.exchange(
-                     "/repos/" + username + "/" + repo + "/issues?creator=" + username + "&state=all&per+page=100",
+                     "/repos/" + username + "/" + repo + "/issues?creator=" + username + "&state=all&per_page=100",
                      HttpMethod.GET,
                      null,
                      new ParameterizedTypeReference<List<GitHubIssueDTO>>() {

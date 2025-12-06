@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ScoreHistoryRepository extends JpaRepository<ScoreHistory, Long> {
-    List<ScoreHistory> findByUserOrderByCalculatedAt(GitHubUser user);
-    List<ScoreHistory> findByUserIdOrderByCalculatedAt(Long userId);
+    List<ScoreHistory> findByUser_IdOrderByCalculatedAtDesc(Long userId);
+    List<ScoreHistory> findByUserOrderByCalculatedAtDesc(GitHubUser user);
 }

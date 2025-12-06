@@ -23,8 +23,12 @@ public class GitHubPullRequestDTO {
 
     @JsonProperty("merged_at")
     private LocalDateTime mergedAt;
+    public boolean isMerged() {
+        return mergedAt != null;
+    }
 
     private Integer comments;
+
 
     @JsonProperty("review_comments")
     private Integer reviewComments;
