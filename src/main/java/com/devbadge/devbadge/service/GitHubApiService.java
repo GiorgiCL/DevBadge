@@ -1,6 +1,7 @@
 package com.devbadge.devbadge.service;
 
 import com.devbadge.devbadge.dto.github.*;
+import com.devbadge.devbadge.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,7 +34,7 @@ public class GitHubApiService {
             );
         }catch(HttpClientErrorException e){
             log.error("Failed to fetch user profile from GitHub, username{}: {}", username, e.getMessage());
-            throw new RuntimeException("GitHub user not found: " + username);
+            throw new UserNotFoundException(username);
         }
     }
 
@@ -105,5 +107,84 @@ public class GitHubApiService {
             log.error("Failed to fetch PRs for {}/{}: {}", username, repo, e.getMessage());
             return Collections.emptyList();
         }
+
     }
+    public List<GitHubCommitDTO> fetchRepositoryCommitsPaginated(String username, String repo) {
+        List<GitHubCommitDTO> all = new ArrayList<>();
+
+        int page = 1;
+        while (true) {
+            String url = "/repos/" + username + "/" + repo
+                    + "/commits?author=" + username
+                    + "&per_page=100&page=" + page;
+
+            ResponseEntity<List<GitHubCommitDTO>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<List<GitHubCommitDTO>>() {}
+            );
+
+            List<GitHubCommitDTO> pageData = response.getBody();
+
+            if (pageData == null || pageData.isEmpty()) break; // STOP PAGING
+
+            all.addAll(pageData);
+            page++;
+        }
+
+        return all;
+    }
+    public List<GitHubIssueDTO> fetchIssuesPaginated(String username, String repo) {
+        List<GitHubIssueDTO> all = new ArrayList<>();
+
+        int page = 1;
+        while (true) {
+            String url = "/repos/" + username + "/" + repo
+                    + "/issues?creator=" + username
+                    + "&state=all&per_page=100&page=" + page;
+
+            ResponseEntity<List<GitHubIssueDTO>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<List<GitHubIssueDTO>>() {}
+            );
+
+            List<GitHubIssueDTO> pageData = response.getBody();
+
+            if (pageData == null || pageData.isEmpty()) break;
+
+            all.addAll(pageData);
+            page++;
+        }
+
+        return all;
+    }
+    public List<GitHubPullRequestDTO> fetchPullRequestsPaginated(String username, String repo) {
+        List<GitHubPullRequestDTO> all = new ArrayList<>();
+
+        int page = 1;
+        while (true) {
+            String url = "/repos/" + username + "/" + repo
+                    + "/pulls?state=all&per_page=100&page=" + page;
+
+            ResponseEntity<List<GitHubPullRequestDTO>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<List<GitHubPullRequestDTO>>() {}
+            );
+
+            List<GitHubPullRequestDTO> pageData = response.getBody();
+
+            if (pageData == null || pageData.isEmpty()) break;
+
+            all.addAll(pageData);
+            page++;
+        }
+
+        return all;
+    }
+
 }

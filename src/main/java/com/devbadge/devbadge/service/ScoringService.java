@@ -10,6 +10,7 @@ import com.devbadge.devbadge.repository.UserScoreRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -39,9 +40,8 @@ public class ScoringService {
         }
         GitHubUserDTO userDTO = gitHubApiService.fetchUserProfile(username);
 
-        GitHubUser user = gitHubUserRepository
-                .findByUsername(username)
-                .orElseGet(() -> saveGitHubUser(userDTO));
+        GitHubUser user = findOrCreateUserAtomic(userDTO);
+
 
         List<GitHubRepoDTO> repos = gitHubApiService.fetchUserRepositories(username);
         List<GitHubCommitDTO> commits = fetchAllCommits(username, repos);
@@ -76,6 +76,32 @@ public class ScoringService {
         return result;
     }
 
+    @Transactional
+    public GitHubUser findOrCreateUserAtomic(GitHubUserDTO dto) {
+
+        Optional<GitHubUser> existing = gitHubUserRepository.findByUsername(dto.getLogin());
+        if (existing.isPresent()) return existing.get();
+
+        Optional<GitHubUser> locked = gitHubUserRepository.findByUsernameForUpdate(dto.getLogin());
+        if (locked.isPresent()) return locked.get();
+
+        GitHubUser newUser = GitHubUser.builder()
+                .username(dto.getLogin())
+                .githubUserId(dto.getId())
+                .name(dto.getName())
+                .email(dto.getEmail())
+                .bio(dto.getBio())
+                .location(dto.getLocation())
+                .publicRepos(dto.getPublicRepos())
+                .publicGists(dto.getPublicGists())
+                .followers(dto.getFollowers())
+                .following(dto.getFollowing())
+                .accountCreatedAt(dto.getCreatedAt())
+                .lastUpdatedAt(dto.getUpdatedAt())
+                .build();
+
+        return gitHubUserRepository.save(newUser);
+    }
 
 
     private GitHubUser saveGitHubUser(GitHubUserDTO dto) {
@@ -120,7 +146,7 @@ public class ScoringService {
     for(GitHubRepoDTO repo : repos) {
         String repoName = repo.getName();
 
-        List<GitHubCommitDTO> commits = gitHubApiService.fetchRepositoryCommits(username,repoName,100);
+        List<GitHubCommitDTO> commits = gitHubApiService.fetchRepositoryCommitsPaginated(username, repoName);
 
         if(commits != null) {
             allCommits.addAll(commits);

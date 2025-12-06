@@ -32,4 +32,21 @@ public class GitHubApiConfig {
                 .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
                 .build();
     }
+    @Bean("githubRestTemplate")
+    public RestTemplate githubRestTemplate(RestTemplateBuilder builder, RateLimitInterceptor rateLimitInterceptor) {
+
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(10_000);
+        factory.setReadTimeout(30_000);
+
+        return builder
+                .rootUri(baseUrl)
+                .requestFactory(() -> factory)
+                .additionalInterceptors(rateLimitInterceptor) // <-- NEW
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + githubToken)
+                .defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github+json")
+                .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
+                .build();
+    }
+
 }
