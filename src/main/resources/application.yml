@@ -1,4 +1,28 @@
+server:
+  port: 8080
+
 spring:
+  application:
+    name: devbadge
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/devbadge?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: admin
+
+  jpa:
+    hibernate:
+      ddl-auto: validate     # <-- Hibernate STOP creating tables; only validate schema
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true            # <-- Flyway ON
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
   security:
     oauth2:
       client:
@@ -10,7 +34,6 @@ spring:
             scope:
               - email
               - profile
-
           github:
             client-id: YOUR_GITHUB_CLIENT_ID
             client-secret: YOUR_GITHUB_CLIENT_SECRET
@@ -18,7 +41,17 @@ spring:
             scope:
               - user:email
               - read:user
+      provider:
+        github:
+          user-info-uri: https://api.github.com/user
 
-        provider:
-          github:
-            user-info-uri: https://api.github.com/user
+github:
+  api:
+    base-url: https://api.github.com
+    token: dummy
+    rate-limit-per-hour: 5000
+
+logging:
+  level:
+    com.devbadge: DEBUG
+    org.springframework.web: INFO

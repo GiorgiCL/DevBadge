@@ -1,0 +1,103 @@
+.history-container {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.history-title {
+    font-size: 1.8rem;
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+
+.history-subtitle {
+    color: #666;
+    margin: 0 0 1.5rem 0;
+}
+
+.no-history {
+    text-align: center;
+    padding: 3rem;
+    color: #999;
+    font-size: 1.1rem;
+}
+
+.history-table-wrapper {
+    overflow-x: auto;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.history-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.history-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.history-table th:first-child {
+    border-top-left-radius: 8px;
+}
+
+.history-table th:last-child {
+    border-top-right-radius: 8px;
+}
+
+.history-row {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s ease;
+}
+
+.history-row:hover {
+    background: #f9fafb;
+}
+
+.history-row:last-child {
+    border-bottom: none;
+}
+
+.history-table td {
+    padding: 1rem;
+}
+
+.date-cell {
+    color: #666;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.score-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    background: #f0f0f0;
+}
+
+.score-badge.overall {
+    color: white;
+    padding: 0.4rem 0.9rem;
+    font-size: 1.05rem;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .history-table {
+        font-size: 0.85rem;
+    }
+
+    .history-table th,
+    .history-table td {
+        padding: 0.75rem 0.5rem;
+    }
+}

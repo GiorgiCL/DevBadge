@@ -3,7 +3,9 @@ package com.devbadge.devbadge.service;
 import com.devbadge.devbadge.dto.user.GitHubUserRequest;
 import com.devbadge.devbadge.dto.user.GitHubUserResponse;
 import com.devbadge.devbadge.entity.GitHubUser;
+import com.devbadge.devbadge.entity.ScoreHistory;
 import com.devbadge.devbadge.repository.GitHubUserRepository;
+import com.devbadge.devbadge.repository.ScoreHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,65 +15,71 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GitHubUserService {
 
-    private final GitHubUserRepository repository;
+    private final GitHubUserRepository userRepo;
+    private final ScoreHistoryRepository historyRepo;
 
-    public GitHubUserResponse create(GitHubUserRequest request) {
+    public GitHubUserResponse create(GitHubUserRequest r) {
         GitHubUser user = GitHubUser.builder()
-                .username(request.getUsername())
-                .name(request.getName())
-                .email(request.getEmail())
-                .bio(request.getBio())
-                .location(request.getLocation())
+                .username(r.getUsername())
+                .name(r.getName())
+                .email(r.getEmail())
+                .location(r.getLocation())
+                .bio(r.getBio())
                 .build();
 
-        repository.save(user);
+        userRepo.save(user);
 
         return toResponse(user);
     }
 
     public List<GitHubUserResponse> getAll() {
-        return repository.findAll().stream()
+        return userRepo.findAll()
+                .stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     public GitHubUserResponse getById(Long id) {
-        GitHubUser user = repository.findById(id)
+        GitHubUser user = userRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return toResponse(user);
     }
 
-    public GitHubUserResponse update(Long id, GitHubUserRequest request) {
-        GitHubUser user = repository.findById(id)
+    public GitHubUserResponse update(Long id, GitHubUserRequest r) {
+        GitHubUser user = userRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setUsername(request.getUsername());
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setBio(request.getBio());
-        user.setLocation(request.getLocation());
+        user.setUsername(r.getUsername());
+        user.setName(r.getName());
+        user.setEmail(r.getEmail());
+        user.setBio(r.getBio());
+        user.setLocation(r.getLocation());
 
-        repository.save(user);
+        userRepo.save(user);
 
         return toResponse(user);
     }
 
     public void delete(Long id) {
-        if (!repository.existsById(id)) {
+        if (!userRepo.existsById(id))
             throw new RuntimeException("User not found");
-        }
-        repository.deleteById(id);
+
+        userRepo.deleteById(id);
     }
 
-    private GitHubUserResponse toResponse(GitHubUser user) {
+    public List<ScoreHistory> getHistory(Long id) {
+        return historyRepo.findByUser_IdOrderByCalculatedAtDesc(id);
+    }
+
+    private GitHubUserResponse toResponse(GitHubUser u) {
         return GitHubUserResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .name(user.getName())
-                .email(user.getEmail())
-                .bio(user.getBio())
-                .location(user.getLocation())
+                .id(u.getId())
+                .username(u.getUsername())
+                .name(u.getName())
+                .email(u.getEmail())
+                .location(u.getLocation())
+                .bio(u.getBio())
                 .build();
     }
 }

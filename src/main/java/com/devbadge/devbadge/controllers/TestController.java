@@ -18,20 +18,42 @@ public class TestController {
     public GitHubUserDTO getUser(@PathVariable String username) {
         return gitHubApiService.fetchUserProfile(username);
     }
+
     @GetMapping("/repos/{username}")
     public List<GitHubRepoDTO> testRepos(@PathVariable String username) {
         return gitHubApiService.fetchUserRepositories(username);
     }
+
+    // -----------------------------------------------------------
+    // COMMITS (PAGINATED)
+    // -----------------------------------------------------------
     @GetMapping("/commits/{username}/{repo}")
-public List<GitHubCommitDTO> testCommits(@PathVariable String username, @PathVariable String repo, @RequestParam(defaultValue = "30") int limit) {
-    return gitHubApiService.fetchRepositoryCommits(username, repo, limit);
-}
-@GetMapping("/prs/{username}/{repo}")
-    public List<GitHubPullRequestDTO> testPullRequests(@PathVariable String username, @PathVariable String repo) {
-        return gitHubApiService.fetchPullRequests(username, repo);
-}
-@GetMapping("/issues/{username}/{repo}")
-    public List<GitHubIssueDTO> testIssues(@PathVariable String username, @PathVariable String repo) {
-        return gitHubApiService.fetchIssues(username, repo);
-}
+    public List<GitHubCommitDTO> testCommits(
+            @PathVariable String username,
+            @PathVariable String repo
+    ) {
+        return gitHubApiService.fetchRepositoryCommitsPaginated(username, repo);
+    }
+
+    // -----------------------------------------------------------
+    // PRs (PAGINATED)
+    // -----------------------------------------------------------
+    @GetMapping("/prs/{username}/{repo}")
+    public List<GitHubPullRequestDTO> testPullRequests(
+            @PathVariable String username,
+            @PathVariable String repo
+    ) {
+        return gitHubApiService.fetchPullRequestsPaginated(username, repo);
+    }
+
+    // -----------------------------------------------------------
+    // ISSUES (PAGINATED)
+    // -----------------------------------------------------------
+    @GetMapping("/issues/{username}/{repo}")
+    public List<GitHubIssueDTO> testIssues(
+            @PathVariable String username,
+            @PathVariable String repo
+    ) {
+        return gitHubApiService.fetchIssuesPaginated(username, repo);
+    }
 }

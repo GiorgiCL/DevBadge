@@ -28,6 +28,7 @@ public class ScoringService {
     private final UserScoreRepository userScoreRepository;
     private final ScoreHistoryRepository scoreHistoryRepository;
 
+    @Transactional
     public UserScore calculateScores(String username) {
         log.info("Calculating scores for {}", username);
 
@@ -163,7 +164,7 @@ public class ScoringService {
         for (GitHubRepoDTO repo : repos) {
             String repoName = repo.getName();
 
-            List<GitHubIssueDTO> issues = gitHubApiService.fetchIssues(username, repoName);
+            List<GitHubIssueDTO> issues = gitHubApiService.fetchIssuesPaginated(username, repoName);
 
             if (issues != null) {
                 allIssues.addAll(issues);
@@ -180,7 +181,7 @@ public class ScoringService {
 
         for (GitHubRepoDTO repo : repos) {
             String repoName = repo.getName();
-            List<GitHubPullRequestDTO> prs = gitHubApiService.fetchPullRequests(username, repoName);
+            List<GitHubPullRequestDTO> prs = gitHubApiService.fetchPullRequestsPaginated(username, repoName);
 
             if (prs != null) {
                 allPulls.addAll(prs);
