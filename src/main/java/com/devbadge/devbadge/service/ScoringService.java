@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -230,29 +231,28 @@ public class ScoringService {
         return totalScore / commits.size();
     }
     private double scoreConsistency(List<GitHubCommitDTO> commits) {
-        if (commits == null || commits.isEmpty()) {
-            return 0.0;
-        }
+        if (commits == null || commits.isEmpty()) return 0.0;
 
         List<java.time.LocalDate> dates = commits.stream()
-                .map(c -> c.getCommit().getAuthor().getDate().toLocalDate())
+                .map(c -> {
+                    if (c == null || c.getCommit() == null || c.getCommit().getAuthor() == null || c.getCommit().getAuthor().getDate() == null) {
+                        return null;
+                    }
+                    return c.getCommit().getAuthor().getDate().toLocalDate();
+                })
+                .filter(Objects::nonNull)
                 .toList();
 
-        long activeDays = dates.stream().distinct().count();
+        if (dates.isEmpty()) return 0.0;
 
+        long activeDays = dates.stream().distinct().count();
         java.time.LocalDate min = dates.stream().min(java.time.LocalDate::compareTo).get();
         java.time.LocalDate max = dates.stream().max(java.time.LocalDate::compareTo).get();
 
         long totalDays = java.time.temporal.ChronoUnit.DAYS.between(min, max) + 1;
+        if (totalDays <= 0) return 0.0;
 
-        if (totalDays <= 0) {
-            return 0.0;
-        }
-
-        double ratio = (double) activeDays / totalDays;
-
-        double score = ratio * 10;
-
+        double score = ((double) activeDays / totalDays) * 10;
         return Math.max(0, Math.min(score, 10));
     }
     private double scoreCollaboration(List<GitHubPullRequestDTO> prs, List<GitHubIssueDTO> issues) {

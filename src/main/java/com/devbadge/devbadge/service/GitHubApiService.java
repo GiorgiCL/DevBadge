@@ -5,12 +5,14 @@ import com.devbadge.devbadge.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +34,7 @@ public class GitHubApiService {
 
     private HttpEntity<?> authHeaders() {
         HttpHeaders h = new HttpHeaders();
+        // Keep your existing style. (If token is empty, GitHub just treats it as unauth.)
         h.set("Authorization", "token " + token);
         return new HttpEntity<>(h);
     }
@@ -53,7 +56,7 @@ public class GitHubApiService {
             ).getBody();
 
         } catch (HttpClientErrorException e) {
-            log.error("Profile fetch FAILED for {}: {}", username, e.getMessage());
+            log.error("Profile fetch FAILED for {}: {} {}", username, e.getStatusCode(), e.getMessage());
             throw new UserNotFoundException(username);
         }
     }
@@ -74,7 +77,10 @@ public class GitHubApiService {
             return response.getBody() != null ? response.getBody() : Collections.emptyList();
 
         } catch (HttpClientErrorException e) {
-            log.error("Repo fetch FAILED for {}: {}", username, e.getMessage());
+            log.error("Repo fetch FAILED for {}: {} {}", username, e.getStatusCode(), e.getMessage());
+            return Collections.emptyList();
+        } catch (HttpServerErrorException | ResourceAccessException e) {
+            log.error("Repo fetch FAILED (server/network) for {}: {}", username, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -90,16 +96,30 @@ public class GitHubApiService {
             String url = baseUrl + "/repos/" + username + "/" + repo +
                     "/commits?author=" + username + "&per_page=100&page=" + page;
 
-            ResponseEntity<List<GitHubCommitDTO>> response =
-                    restTemplate.exchange(url, HttpMethod.GET, authHeaders(),
-                            new ParameterizedTypeReference<List<GitHubCommitDTO>>() {});
+            try {
+                ResponseEntity<List<GitHubCommitDTO>> response =
+                        restTemplate.exchange(url, HttpMethod.GET, authHeaders(),
+                                new ParameterizedTypeReference<List<GitHubCommitDTO>>() {});
 
-            List<GitHubCommitDTO> pageData = response.getBody();
-            if (pageData == null || pageData.isEmpty()) break;
+                List<GitHubCommitDTO> pageData = response.getBody();
+                if (pageData == null || pageData.isEmpty()) break;
 
-            all.addAll(pageData);
-            page++;
+                all.addAll(pageData);
+                page++;
+
+            } catch (HttpClientErrorException e) {
+                // Common: 409 CONFLICT for empty repos (no commits yet)
+                // Also possible: 404 not found, 403 forbidden, etc.
+                log.warn("Commits fetch skipped for {}/{}: {} {}",
+                        username, repo, e.getStatusCode(), e.getMessage());
+                break; // Treat as "no commits" for this repo
+            } catch (HttpServerErrorException | ResourceAccessException e) {
+                log.warn("Commits fetch failed for {}/{} (server/network): {}",
+                        username, repo, e.getMessage());
+                break; // Don't crash whole scoring because one repo endpoint is unstable
+            }
         }
+
         return all;
     }
 
@@ -114,16 +134,28 @@ public class GitHubApiService {
             String url = baseUrl + "/repos/" + username + "/" + repo +
                     "/issues?creator=" + username + "&state=all&per_page=100&page=" + page;
 
-            ResponseEntity<List<GitHubIssueDTO>> response =
-                    restTemplate.exchange(url, HttpMethod.GET, authHeaders(),
-                            new ParameterizedTypeReference<List<GitHubIssueDTO>>() {});
+            try {
+                ResponseEntity<List<GitHubIssueDTO>> response =
+                        restTemplate.exchange(url, HttpMethod.GET, authHeaders(),
+                                new ParameterizedTypeReference<List<GitHubIssueDTO>>() {});
 
-            List<GitHubIssueDTO> pageData = response.getBody();
-            if (pageData == null || pageData.isEmpty()) break;
+                List<GitHubIssueDTO> pageData = response.getBody();
+                if (pageData == null || pageData.isEmpty()) break;
 
-            all.addAll(pageData);
-            page++;
+                all.addAll(pageData);
+                page++;
+
+            } catch (HttpClientErrorException e) {
+                log.warn("Issues fetch skipped for {}/{}: {} {}",
+                        username, repo, e.getStatusCode(), e.getMessage());
+                break;
+            } catch (HttpServerErrorException | ResourceAccessException e) {
+                log.warn("Issues fetch failed for {}/{} (server/network): {}",
+                        username, repo, e.getMessage());
+                break;
+            }
         }
+
         return all;
     }
 
@@ -138,16 +170,28 @@ public class GitHubApiService {
             String url = baseUrl + "/repos/" + username + "/" + repo +
                     "/pulls?state=all&per_page=100&page=" + page;
 
-            ResponseEntity<List<GitHubPullRequestDTO>> response =
-                    restTemplate.exchange(url, HttpMethod.GET, authHeaders(),
-                            new ParameterizedTypeReference<List<GitHubPullRequestDTO>>() {});
+            try {
+                ResponseEntity<List<GitHubPullRequestDTO>> response =
+                        restTemplate.exchange(url, HttpMethod.GET, authHeaders(),
+                                new ParameterizedTypeReference<List<GitHubPullRequestDTO>>() {});
 
-            List<GitHubPullRequestDTO> pageData = response.getBody();
-            if (pageData == null || pageData.isEmpty()) break;
+                List<GitHubPullRequestDTO> pageData = response.getBody();
+                if (pageData == null || pageData.isEmpty()) break;
 
-            all.addAll(pageData);
-            page++;
+                all.addAll(pageData);
+                page++;
+
+            } catch (HttpClientErrorException e) {
+                log.warn("PR fetch skipped for {}/{}: {} {}",
+                        username, repo, e.getStatusCode(), e.getMessage());
+                break;
+            } catch (HttpServerErrorException | ResourceAccessException e) {
+                log.warn("PR fetch failed for {}/{} (server/network): {}",
+                        username, repo, e.getMessage());
+                break;
+            }
         }
+
         return all;
     }
 }
