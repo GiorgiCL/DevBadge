@@ -5,39 +5,43 @@ import ScoreCard from '../components/ScoreCard';
 import ScoreHistory from '../components/ScoreHistory';
 import './UserScorePage.css';
 
-/**
- * User Score Page - Shows score and history for a specific user
- * Gets username from URL parameter
- */
 const UserScorePage = () => {
-    // Get username from URL (e.g., /user/torvalds -> username = "torvalds")
     const { username } = useParams();
     const navigate = useNavigate();
 
-    // State management
     const [scoreData, setScoreData] = useState(null);
     const [historyData, setHistoryData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [syncing, setSyncing] = useState(false);
     const [error, setError] = useState(null);
 
-    // Function to fetch both score and history
     const fetchUserData = async () => {
         try {
             setLoading(true);
             setError(null);
+            setSyncing(false);
 
-            // Call both API endpoints in parallel
-            const [score, history] = await Promise.all([
-                getUserScore(username),
-                getUserHistory(username)
-            ]);
+            const scoreResponse = await getUserScore(username);
 
-            setScoreData(score);
+            if (scoreResponse?.code === 'USER_NOT_IN_DB') {
+                setSyncing(true);
+                setLoading(false);
+                setTimeout(fetchUserData, 60000);
+                return;
+            }
+
+            const history = await getUserHistory(username);
+
+            setScoreData(scoreResponse);
             setHistoryData(history);
         } catch (err) {
-            console.error('Error fetching user data:', err);
+            if (err.response?.status === 202) {
+                setSyncing(true);
+                setLoading(false);
+                setTimeout(fetchUserData, 60000);
+                return;
+            }
 
-            // Handle different types of errors
             if (err.response?.status === 404) {
                 setError(`User "${username}" not found on GitHub`);
             } else if (err.response?.status === 429) {
@@ -50,17 +54,14 @@ const UserScorePage = () => {
         }
     };
 
-    // Fetch data when component loads or username changes
     useEffect(() => {
         fetchUserData();
     }, [username]);
 
-    // Go back to home page
     const handleBackToHome = () => {
         navigate('/');
     };
 
-    // Loading state
     if (loading) {
         return (
             <div className="user-score-page">
@@ -73,7 +74,18 @@ const UserScorePage = () => {
         );
     }
 
-    // Error state
+    if (syncing) {
+        return (
+            <div className="user-score-page">
+                <div className="loading-container">
+                    <div className="loading-spinner"></div>
+                    <h2>Fetching data from GitHub…</h2>
+                    <p>User was not yet stored. Data is being prepared. Please wait a moment.</p>
+                </div>
+            </div>
+        );
+    }
+
     if (error) {
         return (
             <div className="user-score-page">
@@ -89,22 +101,16 @@ const UserScorePage = () => {
         );
     }
 
-    // Success state - show data
     return (
         <div className="user-score-page">
             <div className="page-container">
-                {/* Back button */}
                 <button onClick={handleBackToHome} className="back-link">
                     ← Back to Search
                 </button>
 
-                {/* Score Card */}
                 {scoreData && <ScoreCard score={scoreData} />}
-
-                {/* Score History */}
                 {historyData && <ScoreHistory history={historyData} />}
 
-                {/* Refresh button */}
                 <div className="refresh-section">
                     <button onClick={fetchUserData} className="refresh-button">
                         🔄 Refresh Scores

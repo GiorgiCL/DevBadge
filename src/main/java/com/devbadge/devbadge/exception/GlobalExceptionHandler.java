@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex, HttpServletRequest req) {
-        ex.printStackTrace(); // log internally, do NOT expose
+        ex.printStackTrace();
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", req);
     }
 }

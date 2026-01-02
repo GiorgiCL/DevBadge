@@ -6,7 +6,12 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "analysis_cache")
+@Table(
+        name = "analysis_cache",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_analysis_cache_user_key", columnNames = {"user_id", "cache_key"})
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,7 +35,7 @@ public class AnalysisCache {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -38,4 +43,3 @@ public class AnalysisCache {
         createdAt = LocalDateTime.now();
     }
 }
-

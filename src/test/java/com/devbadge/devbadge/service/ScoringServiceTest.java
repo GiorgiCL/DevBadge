@@ -95,13 +95,21 @@ class ScoringServiceTest {
     void missingUserInDb_createsUser() {
         when(cacheService.getCached("testuser", "user_score")).thenReturn(Optional.empty());
         when(gitHubApiService.fetchUserProfile("testuser")).thenReturn(userDto("testuser"));
-        when(userRepo.findByUsername("testuser")).thenReturn(Optional.empty());
         when(gitHubApiService.fetchUserRepositories("testuser")).thenReturn(List.of());
+
+        GitHubUser created = GitHubUser.builder().username("testuser").build();
+
+        when(userRepo.findByUsername("testuser"))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(created));
+
+        when(userRepo.saveAndFlush(any(GitHubUser.class))).thenReturn(created);
 
         scoringService.calculateScores("testuser");
 
-        verify(userRepo).save(any(GitHubUser.class));
+        verify(userRepo).saveAndFlush(any(GitHubUser.class));
     }
+
 
     @Test
     void githubUserNotFound_throwsException() {
