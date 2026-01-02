@@ -106,40 +106,8 @@ public class ScoringService {
     }
 
 
-    private GitHubUser saveGitHubUser(GitHubUserDTO dto) {
-        log.info("Saving new GitHub user in DB: {}", dto.getLogin());
 
-        GitHubUser user = GitHubUser.builder()
-                .username(dto.getLogin())
-                .githubUserId(dto.getId())
-                .name(dto.getName())
-                .email(dto.getEmail())
-                .location(dto.getLocation())
-                .bio(dto.getBio())
-                .publicRepos(dto.getPublicRepos())
-                .publicGists(dto.getPublicGists())
-                .followers(dto.getFollowers())
-                .following(dto.getFollowing())
-                .accountCreatedAt(dto.getCreatedAt())
-                .lastUpdatedAt(dto.getUpdatedAt())
-                .build();
 
-        return gitHubUserRepository.save(user);
-    }
-    private void saveHistory(GitHubUser user, UserScore latestScore) {
-
-        ScoreHistory history = ScoreHistory.builder()
-                .user(user)
-                .commitQualityScore(latestScore.getCommitQualityScore())
-                .consistencyScore(latestScore.getConsistencyScore())
-                .collaborationScore(latestScore.getCollaborationScore())
-                .impactScore(latestScore.getImpactScore())
-                .codeReviewScore(latestScore.getCodeReviewScore())
-                .overallScore(latestScore.getOverallScore())
-                .build();
-
-        scoreHistoryRepository.save(history);
-    }
     private List<GitHubCommitDTO> fetchAllCommits(String username, List<GitHubRepoDTO> repos) {
         log.info("Fetching all commits across {} repositories for {}", repos.size(), username);
 

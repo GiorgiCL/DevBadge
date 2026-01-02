@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -20,19 +21,20 @@ import java.util.Optional;
 public class AnalysisCacheService {
     private final AnalysisCacheRepository analysisCacheRepository;
     private final GitHubUserRepository userRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public Optional<String> getCached(String username, String cacheKey){
+    public Optional<String> getCached(String username, String cacheKey) {
         GitHubUser user = userRepository.findByUsername(username).orElse(null);
-        if(user == null){
-            return Optional.empty();
-        }
+        if (user == null) return Optional.empty();
+
         LocalDateTime now = LocalDateTime.now();
-        return analysisCacheRepository.findByUserAndCacheKeyAndExpiresAtAfter(user,cacheKey,now)
+        return analysisCacheRepository
+                .findByUserAndCacheKeyAndExpiresAtAfter(user, cacheKey, now)
                 .map(AnalysisCache::getCacheData);
     }
-    public void saveCache(String username, String cacheKey, Object data, Duration ttl) {
 
+    @Transactional
+    public void saveCache(String username, String cacheKey, Object data, Duration ttl) {
         GitHubUser user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Cannot cache: user not found: " + username));
 
@@ -40,6 +42,8 @@ public class AnalysisCacheService {
 
         try {
             String json = objectMapper.writeValueAsString(data);
+
+            analysisCacheRepository.deleteByUserAndCacheKey(user, cacheKey);
 
             AnalysisCache cache = AnalysisCache.builder()
                     .user(user)
@@ -50,12 +54,11 @@ public class AnalysisCacheService {
 
             analysisCacheRepository.save(cache);
             log.info("Saved cache for {} / {} (expires at {})", username, cacheKey, expiresAt);
-
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize cache data: {}", e.getMessage());
         }
-
     }
+
     public <T> T fromJson(String json, Class<T> type) {
         try {
             return objectMapper.readValue(json, type);
